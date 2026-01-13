@@ -82,10 +82,10 @@ npm src/index.js
 src/
   commands/
   events/
-  quiz/
   deployCommand.js
   index.js
   utils.js
+.env
 ```
 
 ---
