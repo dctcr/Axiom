@@ -43,3 +43,51 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 git clone https://github.com/dctcr/Axiom.git
 cd Axiom
 ```
+
+2. Install Dependencies
+```bash
+npm install
+```
+
+3. Create a `.env` file
+File should go in the project root:
+```env
+TOKEN=your_discord_bot_token
+CLIENT_ID=your_application_id
+GUILD_ID=your_test_guild_id
+OWNERS=your_id,example_id_2
+```
+> `.env` is required and is intentionally not tracked by Git.
+
+---
+
+## 🚀 Running the Bot
+
+1. Deploy Slash Commands
+```bash
+npm src/deployCommand.js
+```
+
+2. Start the bot
+```bash
+npm src/index.js
+```
+
+---
+
+## 📁 Project Structure
+
+```css
+src/
+  commands/
+  events/
+  quiz/
+  deployCommand.js
+  index.js
+  utils.js
+```
+
+---
+
+## 📄 License
+This project is currently unlicensed.
