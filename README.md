@@ -50,6 +50,7 @@ npm install
 ```
 
 3. Create a `.env` file
+
 File should go in the project root:
 ```env
 TOKEN=your_discord_bot_token
@@ -77,7 +78,7 @@ npm src/index.js
 
 ## 📁 Project Structure
 
-```css
+```
 src/
   commands/
   events/
