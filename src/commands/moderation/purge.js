@@ -23,7 +23,7 @@ module.exports = {
         flags: MessageFlags.Ephemeral
     });
 
-    return channel.bulkDelete(amount, false).then(async m => await interaction.reply({
+    return channel.bulkDelete(amount, false).then(async () => await interaction.reply({
         content: `Deleted ${amount} message${2 >= amount ? "" : "s"}.`,
         flags: MessageFlags.Ephemeral
     })).catch(console.error());
