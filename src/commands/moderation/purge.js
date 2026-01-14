@@ -18,7 +18,7 @@ module.exports = {
     const channel = interaction.channel;
     const amount = interaction.options.getNumber("amount");
     
-    if (amount === 0) return await interaction.reply({
+    if (amount === 0) return interaction.reply({
         content: "Amount must be 1 or more.",
         flags: MessageFlags.Ephemeral
     });
