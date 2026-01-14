@@ -70,7 +70,7 @@ module.exports = {
         )
       );
 
-    return await interaction.reply({
+    return interaction.reply({
         components: [onAvatar],
         flags: MessageFlags.IsComponentsV2
     });
