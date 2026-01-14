@@ -29,7 +29,7 @@ module.exports = {
 
     // Guild Check
     if (!interaction.inGuild()) return interaction.reply({
-        content: `This command can only be run in a guild!`,
+        content: `This command can only be used in a guild!`,
         flags: MessageFlags.Ephemeral,
     });
 
@@ -59,6 +59,7 @@ module.exports = {
       flags: MessageFlags.Ephemeral,
     });
 
+    // Assemble Information
     const statuses = {
       online: "Online",
       idle: "Idle",
@@ -125,20 +126,21 @@ module.exports = {
         .map((r) => r.toString())
         .join(" ") || "None";
     const roleCount = Math.max(0, member.roles.cache.size - 1);
-    const onPermissions = cleanPerms(member);
+    const onPermissions = cleanPerms(member.permissions, member);
 
+    // Create Embed
     const onEmbed = new EmbedBuilder()
       .setThumbnail(avatar)
       .setColor(member.displayHexColor)
       .setAuthor({ name: member.displayName, iconURL: avatar })
       .addFields(
         { name: "Mention", value: onMention, inline: true },
-        { name: "ID", value: onId, inline: true },
         { name: "Username", value: onUsername, inline: true },
+        { name: "ID", value: onId, inline: true },
 
+        { name: "Boosting Since", value: onBoosting, inline: true },
         { name: "Created At", value: onCreated, inline: true },
         { name: "Joined At", value: onJoined, inline: true },
-        { name: "Boosting Since", value: onBoosting, inline: true },
 
         { name: "Status", value: onStatus, inline: true },
         { name: "Platform", value: onPlatform, inline: true },

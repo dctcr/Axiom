@@ -14,12 +14,10 @@ module.exports = {
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
-    if (interaction.user.id !== "882437978918633513") {
-      return interaction.reply({
+    if (interaction.user.id !== "882437978918633513") return interaction.reply({
         content: "Nope.",
         flags: MessageFlags.Ephemeral,
-      });
-    }
+    });
 
     await interaction.deferReply();
 
