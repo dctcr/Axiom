@@ -55,7 +55,7 @@ module.exports = {
     else member = interaction.member;
 
     if (!member) return interaction.reply({
-      content: `Couldn't find that member!`,
+      content: ` I couldn't find that member!`,
       flags: MessageFlags.Ephemeral,
     });
 
