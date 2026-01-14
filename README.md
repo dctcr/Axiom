@@ -66,12 +66,12 @@ OWNERS=your_id,example_id_2
 
 1. Deploy Slash Commands
 ```bash
-npm src/deployCommand.js
+node src/deployCommand.js
 ```
 
 2. Start the bot
 ```bash
-npm src/index.js
+node src/index.js
 ```
 
 ---
