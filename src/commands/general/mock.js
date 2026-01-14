@@ -17,11 +17,10 @@ module.exports = {
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
     // Check Guild
-    if (!interaction.inGuild())
-      return interaction.reply({
+    if (!interaction.inGuild()) return interaction.reply({
         content: `This command can only be used in a guild!`,
         flags: MessageFlags.Ephemeral,
-      });
+    });
 
     // Gather String Option
     const toMock = normalize(interaction.options.getString("text"));
