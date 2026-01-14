@@ -52,6 +52,7 @@ module.exports = {
         "Doubtful",
         "No",
         "Definitely Not",
+        "Hell nah"
       ],
     };
 
