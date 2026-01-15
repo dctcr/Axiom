@@ -11,7 +11,7 @@ const { parseCommaList } = require("../../utils");
 // In-memory poll storage (key = messageId)
 // { question, options: [string], votes: Map<userId, optionIndex> }
 const POLLS = new Map();
-const OPT_LABELS = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"];
+const OPT_LABELS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
 function buildPollContainer(question, options, counts) {
   const lines = options.map((opt, i) => {
@@ -20,9 +20,9 @@ function buildPollContainer(question, options, counts) {
   });
 
   return new ContainerBuilder()
-    .addTextDisplayComponents(t => t.setContent(`## 📊 ${question}`))
-    .addSeparatorComponents(s => s)
-    .addTextDisplayComponents(t => t.setContent(lines.join("\n")));
+    .addTextDisplayComponents((t) => t.setContent(`## ${question}`))
+    .addSeparatorComponents((s) => s)
+    .addTextDisplayComponents((t) => t.setContent(lines.join("\n")));
 }
 
 function buildPollButtons(messageId, options) {
@@ -59,7 +59,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("poll")
     .setDescription("Create a poll!")
-    .addStringOption(option =>
+    .addStringOption((option) =>
       option
         .setName("title")
         .setDescription("Poll question")
@@ -67,7 +67,7 @@ module.exports = {
         .setMaxLength(120)
         .setRequired(true)
     )
-    .addStringOption(option =>
+    .addStringOption((option) =>
       option
         .setName("options")
         .setDescription("Comma-separated options (e.g., Yes, No, Maybe)")
@@ -81,7 +81,7 @@ module.exports = {
     if (!interaction.inGuild()) {
       return interaction.reply({
         content: "This command can only be used in a guild!",
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -97,8 +97,9 @@ module.exports = {
 
     if (!options) {
       return interaction.reply({
-        content: "Options must be comma-separated (2-10)! Example: `Yes, No, Maybe`",
-        flags: MessageFlags.Ephemeral
+        content:
+          "Options must be comma-separated (2-10)! Example: `Yes, No, Maybe`",
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -112,7 +113,7 @@ module.exports = {
     const msg = await interaction.reply({
       components: [tempContainer],
       flags: MessageFlags.IsComponentsV2,
-      withResponse: true
+      withResponse: true,
     });
 
     const message = msg.resource.message;
