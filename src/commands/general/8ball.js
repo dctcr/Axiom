@@ -63,7 +63,7 @@ module.exports = {
       options[category][Math.floor(Math.random() * options[category].length)];
     
     const container = new ContainerBuilder()
-      .addTextDisplayComponents((text) => text.setContent(`### ${query} 🎱`))
+      .addTextDisplayComponents((text) => text.setContent(`### 🎱 ${query}`))
       .addSeparatorComponents((s) => s)
       .addTextDisplayComponents((text) => text.setContent(`-# Magic 8 Ball says:\n${response}`));
 
