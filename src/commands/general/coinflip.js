@@ -10,6 +10,6 @@ module.exports = {
     const results = ["Heads!", "Tails!"];
     const result = results[Math.floor(Math.random() * results.length)];
 
-    return interaction.reply({ content: result });
+    return interaction.reply(result);
   },
 };
