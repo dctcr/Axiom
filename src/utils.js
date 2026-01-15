@@ -151,11 +151,85 @@ async function getJoinPosition(guild, member) {
   return sorted.findIndex((m) => m.id === member.id) + 1;
 }
 
+/**
+ * @param {string} input
+ * @param {{min?: number, max?: number}} [cfg={}]
+ * @returns {{ok: true, values: string[]} | {ok: false, error: string}}
+ */
+function parseCommaList(input, cfg = {}) {
+  const min = cfg.min ?? 2;
+  const max = cfg.max ?? 25;
+
+  const values = input
+    .split(", ")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (values.length < min) {
+    return {
+      ok: false,
+      error: `Provide at least ${min}, or more options separated by commas.`,
+    };
+  }
+
+  if (values.length > max) {
+    return { ok: false, error: `Too many options: Maximum is ${max}` };
+  }
+
+  return { ok: true, values };
+}
+
+/**
+ * @param {string} input
+ * @param {{ minSpan?: number, maxSpan?: number }} [cfg]
+ * @returns {{ ok: true, min: number, max: number } | { ok: false, error: string }}
+ */
+function parseNumberRange(input, cfg = {}) {
+  const maxSpan = cfg.maxSpan ?? 1_000_000;
+
+  const parts = input
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length !== 2) {
+    return { ok: false, error: `Use the format: \`1, 10\`` };
+  }
+
+  const a = Number(parts[0]);
+  const b = Number(parts[1]);
+
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
+    return {
+      ok: false,
+      error: `Both values must be numbers. Example: \`1, 10\``,
+    };
+  }
+
+  // integers only (change to Math.floor if you want to accept floats)
+  if (!Number.isInteger(a) || !Number.isInteger(b)) {
+    return { ok: false, error: `Please use whole numbers. Example: \`1, 10\`` };
+  }
+
+  const min = Math.min(a, b);
+  const max = Math.max(a, b);
+
+  if (max - min > maxSpan) {
+    return {
+      ok: false,
+      error: `Range is too large. Max span is ${maxSpan.toLocaleString()}.`,
+    };
+  }
+
+  return { ok: true, min, max };
+}
+
 module.exports = {
   normalize,
   resolveMember,
   resolveRole,
   formatDate,
   cleanPerms,
-  getJoinPosition
+  getJoinPosition,
+  parseCommaList,
+  parseNumberRange,
 };
