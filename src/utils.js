@@ -223,6 +223,23 @@ function parseNumberRange(input, cfg = {}) {
   return { ok: true, min, max };
 }
 
+/**
+ * @param {number} min 
+ * @param {number} max 
+ * @returns Returns random number from min-max range
+ */
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * @param {Array} arr 
+ * @returns Returns random element from array
+ */
+function pickOne(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 module.exports = {
   normalize,
   resolveMember,
@@ -232,4 +249,6 @@ module.exports = {
   getJoinPosition,
   parseCommaList,
   parseNumberRange,
+  randInt,
+  pickOne
 };
