@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags, ContainerBuilder } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -21,8 +21,8 @@ module.exports = {
         flags: MessageFlags.Ephemeral,
       });
 
-    // Gather String Option (do nothing...)
-    const query = interaction.options.getString("text");
+    // Gather Question
+    const query = interaction.options.getString("question");
 
     const options = {
       affirmative: [
@@ -56,11 +56,17 @@ module.exports = {
       ],
     };
 
+    // Create Response/Container
     const categories = Object.keys(options);
     const category = categories[Math.floor(Math.random() * categories.length)];
     const response =
       options[category][Math.floor(Math.random() * options[category].length)];
+    
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents((text) => text.setContent(`### ${query} 🎱`))
+      .addSeparatorComponents((s) => s)
+      .addTextDisplayComponents((text) => text.setContent(`-# Magic 8 Ball says:\n${response}`));
 
-    return interaction.reply(response);
+    return interaction.reply({components: [container], flags: MessageFlags.IsComponentsV2});
   },
 };
