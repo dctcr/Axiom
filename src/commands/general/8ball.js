@@ -61,6 +61,6 @@ module.exports = {
     const response =
       options[category][Math.floor(Math.random() * options[category].length)];
 
-    return interaction.reply({ content: response });
+    return interaction.reply(response);
   },
 };
