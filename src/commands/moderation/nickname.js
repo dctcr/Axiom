@@ -1,4 +1,8 @@
-const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  MessageFlags,
+  PermissionFlagsBits,
+} = require("discord.js");
 const { resolveMember } = require("../../utils");
 
 module.exports = {
@@ -74,57 +78,69 @@ module.exports = {
     let targetMember = null;
 
     if (sub === "me") targetMember = interaction.member;
-    if (sub === "member") targetMember = interaction.options.getMember("member");
+    if (sub === "member")
+      targetMember = interaction.options.getMember("member");
     if (sub === "search") {
       const query = interaction.options.getString("query");
-      targetMember = await resolveMember(interaction.guild, query)
+      targetMember = await resolveMember(interaction.guild, query);
     }
 
-    if (!targetMember) return interaction.reply({
-      content: `I couldn't find that member!`,
-      flags: MessageFlags.Ephemeral
-    });
+    if (!targetMember)
+      return interaction.reply({
+        content: `I couldn't find that member!`,
+        flags: MessageFlags.Ephemeral,
+      });
 
     const changingOther = targetMember.id !== interaction.member.id;
 
     // Permissions/Hierarchy Check
-    if (changingOther && !interaction.member.permissions.has(PermissionFlagsBits.ManageNicknames)) {
+    if (
+      changingOther &&
+      !interaction.member.permissions.has(PermissionFlagsBits.ManageNicknames)
+    ) {
       return interaction.reply({
         content: `You do not have sufficient permissions to use this command!`,
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (interaction.guild.ownerId === targetMember.id && changingOther) {
       return interaction.reply({
         content: `The server owner's nickname cannot be changed!`,
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!targetMember.manageable) {
       return interaction.reply({
         content: `I cannot change this members nickname!`,
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (changingOther) {
-      const cmp = targetMember.roles.highest.comparePositionTo(interaction.member.roles.highest);
+      const cmp = targetMember.roles.highest.comparePositionTo(
+        interaction.member.roles.highest
+      );
 
-      if (cmp >= 0) return interaction.reply({
-        content: `You can't change that members nickname!`,
-        flags: MessageFlags.Ephemeral
-      });
+      if (cmp >= 0)
+        return interaction.reply({
+          content: `You can't change that members nickname!`,
+          flags: MessageFlags.Ephemeral,
+        });
     }
 
     // Change Nickname
-    await targetMember.setNickname(nextNick, `Changed by ${interaction.user.tag}`).catch((e) => {throw e;});
+    await targetMember
+      .setNickname(nextNick, `Changed by ${interaction.user.tag}`)
+      .catch((e) => {
+        throw e;
+      });
 
     return interaction.reply({
       content: nextNick
         ? `Updated nickname for ${targetMember.user.username} to **${nextNick}**`
-        : `Reset nickname for ${targetMember.user.username}`
+        : `Reset nickname for ${targetMember.user.username}`,
     });
   },
 };
