@@ -42,6 +42,6 @@ module.exports = {
 
     // Send Message
     const mocked = spongebobify(toMock);
-    return interaction.reply({content: mocked});
+    return interaction.reply(mocked);
   },
 };
