@@ -56,7 +56,6 @@ module.exports = {
 
       const n = randInt(parsed.min, parsed.max);
       const chosen = new ContainerBuilder()
-        .setAccentColor(0x131416)
         .addTextDisplayComponents((text) => text.setContent(`### Random Number`))
         .addSeparatorComponents((s) => s)
         .addTextDisplayComponents((text) => text.setContent(`-# Range: ${parsed.min} - ${parsed.max}\nI pick: **${n}**`));
@@ -81,7 +80,6 @@ module.exports = {
 
       const choice = pickOne(parsed.values);
       const chosen = new ContainerBuilder()
-        .setAccentColor(0x131416)
         .addTextDisplayComponents((text) => text.setContent("### Randomize Options"))
         .addSeparatorComponents((s) => s)
         .addTextDisplayComponents((text) => text.setContent(`I pick: **${choice}**`));
