@@ -6,10 +6,23 @@ const {
 } = require("discord.js");
 const { getSnipe } = require("../../stores/snipeStore");
 
+function isImageAttachment(att) {
+  if (att.contentType?.startsWith("image/")) return true;
+  return /\.(png|jpe?g|gif|webp)$/.test(att.url);
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("snipe")
-    .setDescription("Show the most recently deleted message in this channel.")
+    .setDescription("Show a recently deleted message in this channel.")
+    .addIntegerOption((option) =>
+      option
+        .setName("depth")
+        .setDescription("Which deleted message? 1 = most recent (max 5)")
+        .setMinValue(1)
+        .setMaxValue(5)
+        .setRequired(false)
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
@@ -21,37 +34,51 @@ module.exports = {
         flags: MessageFlags.Ephemeral,
       });
 
+    const depth = interaction.options.getInteger("depth") ?? 1;
     const snipe = getSnipe(interaction.channelId);
-    if (!snipe)
-      return interaction.reply({
-        content: `Nothing to snipe in this channel yet!`,
-        flags: MessageFlags.Ephemeral,
-      });
 
-    // Expiry
-    const ageMs = Date.now() - snipe.deletedAt;
-    if (ageMs > 5 * 60 * 1000) {
+    if (!snipe) {
       return interaction.reply({
-        content: `Last deleted message is too old!`,
+        content: `Nothing to snipe at depth **${depth}** (expired or none stored).`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
+    const ageSec = Math.max(
+      0,
+      Math.floor((Date.now() - snipe.deletedAt) / 1000)
+    );
+
+    // No text BUT there are attachments
+    const hasText = Boolean(snipe.content && snipe.content.trim().length);
+    const hasAtt = Boolean(snipe.attachments?.length);
+
     const embed = new EmbedBuilder()
       .setColor("#131416")
       .setAuthor({ name: snipe.authorTag, iconURL: snipe.avatarURL })
-      .setDescription(
-        snipe.content || "No cached content (missing intent or not cached)"
-      )
-      .setFooter({ text: `Deleted ${Math.floor(ageMs) / 1000}s ago` })
+      .setFooter({
+        text: `Depth ${depth}/5 - Deleted ${Math.floor(ageSec) / 1000}s ago`,
+      })
       .setTimestamp(snipe.deletedAt);
 
-    if (snipe.attachments?.length) {
-      embed.setImage(snipe.attachments[0]);
+    if (hasText) {
+      embed.setDescription(snipe.content);
+    } else if (hasAtt) {
+      embed.setDescription("*[No text content - attachments only]*");
+    } else {
+      embed.setDescription(
+        "*No cached content (message wasn't cached / missing intent)*"
+      );
+    }
+
+    if (hasAtt) {
+      const first = snipe.attachments[0];
+      if (isImageAttachment(first)) embed.setImage(first.url);
+
       if (snipe.attachments.length > 1) {
         embed.addFields({
           name: "Attachments",
-          value: snipe.attachments.join("\n"),
+          value: snipe.attachments.map((a) => a.url).join("\n"),
         });
       }
     }
