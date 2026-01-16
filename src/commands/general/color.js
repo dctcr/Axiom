@@ -74,7 +74,7 @@ module.exports = {
     // Choose Output Resolution
     const size = 1024;
     const buffer = makeSolidPng(
-      { r: parsed.r, g: parsed.g, b: parsed.g },
+      { r: parsed.r, g: parsed.g, b: parsed.b },
       size
     );
 
