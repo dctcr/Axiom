@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "discord.js": "^14.25.1",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "pngjs": "^7.0.0"
   },
   "name": "axiom",
   "version": "1.0.0",
