@@ -14,7 +14,14 @@ module.exports = {
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
-    if (interaction.user.id !== "882437978918633513") return interaction.reply({
+
+    // Add your Discord ID to OWNERS in .env
+    const developers = (process.env.OWNERS ?? "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (!developers.includes(interaction.member.id)) return interaction.reply({
         content: "Nope.",
         flags: MessageFlags.Ephemeral,
     });
