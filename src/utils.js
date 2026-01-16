@@ -224,8 +224,8 @@ function parseNumberRange(input, cfg = {}) {
 }
 
 /**
- * @param {number} min 
- * @param {number} max 
+ * @param {number} min
+ * @param {number} max
  * @returns Returns random number from min-max range
  */
 function randInt(min, max) {
@@ -233,11 +233,67 @@ function randInt(min, max) {
 }
 
 /**
- * @param {Array} arr 
+ * @param {Array} arr
  * @returns Returns random element from array
  */
 function pickOne(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * @param {string} value 
+ * @returns {{ ok: true, hex: string, r: number, g: number, b: number, int: number } | { ok: false, error: string }}
+ */
+function parseHex(value) {
+  let hex = String(value ?? "").trim().toLowerCase();
+  if (hex.startsWith("0x")) hex = hex.slice(2);
+  if (hex.startsWith("#")) hex = hex.slice(1);
+
+  if (!/^[0-9a-f]{3}$|^[0-9a-f]{6}$/.test(hex)) {
+    return { ok: false, error: "Hex must be like `#ff00ff` or `#f0f`." };
+  }
+
+  if (hex.length === 3) hex = hex.split("").map(ch => ch + ch).join("");
+
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  const outHex = `#${hex}`.toUpperCase();
+  const int = (r << 16) + (g << 8) + b;
+
+  return { ok: true, hex: outHex, r, g, b, int };
+}
+
+/**
+ * @param {string} value 
+ * @returns {{ ok: true, hex: string, r: number, g: number, b: number, int: number } | { ok: false, error: string }}
+ */
+function parseRgb(value) {
+  const raw = String(value ?? "").trim();
+
+  const parts = raw.split(",").map(s => s.trim()).filter(Boolean);
+  if (parts.length !== 3) {
+    return { ok: false, error: "RGB must be `r,g,b` (example: `255, 0, 255`)." };
+  }
+
+  const nums = parts.map(n => Number(n));
+  if (nums.some(n => !Number.isFinite(n))) {
+    return { ok: false, error: "RGB values must be numbers (0-255)." };
+  }
+  if (nums.some(n => !Number.isInteger(n))) {
+    return { ok: false, error: "RGB values must be whole numbers (0-255)." };
+  }
+
+  let [r, g, b] = nums;
+  if ([r, g, b].some(n => n < 0 || n > 255)) {
+    return { ok: false, error: "RGB values must be between 0 and 255." };
+  }
+
+  const hex = `#${[r, g, b].map(n => n.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+  const int = (r << 16) + (g << 8) + b;
+
+  return { ok: true, hex, r, g, b, int };
 }
 
 module.exports = {
@@ -250,5 +306,7 @@ module.exports = {
   parseCommaList,
   parseNumberRange,
   randInt,
-  pickOne
+  pickOne,
+  parseHex,
+  parseRgb
 };
