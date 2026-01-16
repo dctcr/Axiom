@@ -13,13 +13,29 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 - `serverinfo` – View server statistics and metadata
 - `userinfo` – Detailed user information
 - `roleinfo` – Role details and permissions
+- `poll` - Polls with multiple options (custom buttons)
 
 ### Moderation
-- `kick`
-- `ban`
-- `mute`
-- `purge`
-- `nickname`
+- `kick` - Kick members
+- `ban` - Ban members
+- `mute`- Mute members
+- `purge` - Bulk delete (purge) messages from a channel
+- `lockdown` - Lock a channel to members (customizable permissions coming soon)
+- `snipe` - Snipe the most recently deleted message (depth up to 5)
+- `nickname` - Nickname self or others
+
+### General
+- `8ball` - Ask the Magic 8 Ball
+- `avatar` - Get a member's avatar
+- `coinflip` - Flip a coin (Heads/Tails)
+- `color` - Show a color (RGB/Hex)
+- `mock` - SpOnGeBoB sOmE TeXt
+- `random` - Randomize some options OR Random number (eg., tacos, pizza, burgers OR eg., 1, 10)
+
+### Admin
+- `eval` - Evaluate code inside Discord (developer only, see **Notes** below)
+- `ping` - Check client latency
+- `uptime` - Check client uptime
 
 ### Other
 - `rules` – Planned to be highly customizable per server
@@ -79,14 +95,19 @@ node src/index.js
 ## 📁 Project Structure
 
 ```
-src/
-  commands/
-  events/
+src\
+  commands\
+  config\
+  events\
+  stores\
   deployCommand.js
   index.js
   utils.js
 .env
 ```
+
+## Notes
+- For `eval` to work, you must have administrator permissions inside the guild, and have your ID set in `OWNERS` under `.env`. (See step 3 under **Installation**)
 
 ---
 
