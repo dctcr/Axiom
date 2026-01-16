@@ -107,6 +107,7 @@ src\
 ```
 
 ## Notes
+- When making changes to the bot, make sure to save all files and rerun `node src/deployCommand.js` before starting.
 - For `eval` to work, you must have administrator permissions inside the guild, and have your ID set in `OWNERS` under `.env`. (See step 3 under **Installation**)
 
 ---
