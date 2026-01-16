@@ -35,7 +35,7 @@ module.exports = {
       });
 
     const depth = interaction.options.getInteger("depth") ?? 1;
-    const snipe = getSnipe(interaction.channelId);
+    const snipe = getSnipe(interaction.channelId, depth);
 
     if (!snipe) {
       return interaction.reply({
@@ -44,10 +44,7 @@ module.exports = {
       });
     }
 
-    const ageSec = Math.max(
-      0,
-      Math.floor((Date.now() - snipe.deletedAt) / 1000)
-    );
+    const ageSec = Math.max(0, Math.floor((Date.now() - snipe.deletedAt) / 1000));
 
     // No text BUT there are attachments
     const hasText = Boolean(snipe.content && snipe.content.trim().length);
@@ -57,7 +54,7 @@ module.exports = {
       .setColor("#131416")
       .setAuthor({ name: snipe.authorTag, iconURL: snipe.avatarURL })
       .setFooter({
-        text: `Depth ${depth}/5 - Deleted ${Math.floor(ageSec) / 1000}s ago`,
+        text: `Depth ${depth}/5 - Deleted ${ageSec}s ago`,
       })
       .setTimestamp(snipe.deletedAt);
 
