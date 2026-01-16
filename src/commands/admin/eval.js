@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, ContainerBuilder, MessageFlags } = require("discord.js");
 const { inspect } = require("util");
+require("dotenv").config();
 
 module.exports = {
   data: new SlashCommandBuilder()

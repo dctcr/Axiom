@@ -58,7 +58,7 @@ module.exports = {
             .setMaxLength(32)
         )
     )
-    .setDefaultMemberPermissions(0x0000000004000000),
+    .setDefaultMemberPermissions(PermissionFlagsBits.ChangeNickname),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {

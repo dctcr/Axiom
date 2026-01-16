@@ -26,7 +26,7 @@ module.exports = {
       .addTextDisplayComponents((text) => text.setContent(`## Client Latency`))
       .addSeparatorComponents((s) => s)
       .addTextDisplayComponents((text) =>
-        text.setContent(`Current Ping: ${latency}ms`)
+        text.setContent(`Current Ping: **${latency}ms**`)
       );
 
     return interaction.reply({

@@ -5,6 +5,7 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  PermissionFlagsBits
 } = require("discord.js");
 const { parseCommaList } = require("../../utils");
 
@@ -74,7 +75,7 @@ module.exports = {
         .setMaxLength(200)
         .setRequired(false)
     )
-    .setDefaultMemberPermissions(0x0000000000002000),
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {

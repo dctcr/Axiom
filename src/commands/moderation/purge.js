@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,7 +11,7 @@ module.exports = {
         .setMaxValue(50)
         .setRequired(true)
     )
-    .setDefaultMemberPermissions(0x0000000000002000),
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
