@@ -1,122 +1,101 @@
 const {
   SlashCommandBuilder,
   MessageFlags,
+  ContainerBuilder,
   PermissionFlagsBits,
-  ChannelType,
+  Message,
 } = require("discord.js");
 
-// TODO: create these in src/stores/lockdownStore.js
-// const { loadState, saveState, clearState, getState } = require("../../stores/lockdownStore");
+const {
+  getGuildLockdownState,
+  setGuildLockdownState,
+  clearGuildLockdownState,
+} = require("../../stores/lockdownStore");
 
-const LOCKDOWN_DENIES = {
-  SendMessages: false,
-  AddReactions: false,
-  CreatePublicThreads: false,
-  CreatePrivateThreads: false,
-  SendMessagesInThreads: false,
-};
+const {
+  getTargetChannels,
+  applyLockdown,
+  restoreLockdown,
+} = require("../../utils/lockdown");
 
-function isLockableChannel(ch) {
-  if (!ch) return false;
+/**
+ * @param {Array<{ channelId: string, channelName: string, reason: string }>} skipped
+ * @param {number} max
+ * @returns {string}
+ */
+function formatSkipped(skipped, max = 6) {
+  if (!skipped?.length) return "None";
+  const lines = skipped
+    .slice(0, max)
+    .map((s) => `\\- **${s.channelName ?? s.channelId}** \\- ${s.reason}`);
+  const extra =
+    skipped.length > max ? `\n...and **${skipped.length - max}** more.` : "";
+  return lines.join("\n") + extra;
+}
+
+/**
+ * @param {import("discord.js").ChatInputCommandInteraction} interaction
+ * @returns {string}
+ */
+function actorTag(interaction) {
   return (
-    ch.type === ChannelType.GuildText ||
-    ch.type === ChannelType.GuildAnnouncement ||
-    ch.type === ChannelType.GuildForum ||
-    ch.type === ChannelType.GuildMedia
+    interaction.user?.tag ?? `${interaction.user?.username ?? "unknown"}#0000`
   );
 }
-
-function getTargetChannels(guild, scope, currentChannel) {
-  if (scope === "channel") return [currentChannel].filter(isLockableChannel);
-
-  if (scope === "category") {
-    const parent = currentChannel.parent;
-    if (!parent) return [];
-    // All channels under that category
-    return parent.children.cache.filter(isLockableChannel).toJSON();
-  }
-
-  // scope === "all"
-  return guild.channels.cache.filter(isLockableChannel).toJSON();
-}
-
-// TODO: replace with real persistence
-// State shape suggestion (per guild):
-// {
-//   active: true/false,
-//   guildId,
-//   enabledBy: userId,
-//   enabledAt: timestamp,
-//   reason: string|null,
-//   scope: "channel"|"category"|"all",
-//   channels: {
-//     [channelId]: {
-//        // previous overwrite values for @everyone for each perm:
-//        // true = allow, false = deny, null = unset
-//        before: { SendMessages: null, AddReactions: true, ... }
-//     }
-//   }
-// }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("lockdown")
     .setDescription(
-      "Lock/unlock channels by denying @everyone send/reactions/threads."
+      "Lock/unlock channels by denying @everyone send/reactions/threads.",
     )
     .addSubcommand((sub) =>
       sub
         .setName("enable")
         .setDescription("Enable lockdown")
-        .addStringOption((o) =>
-          o
+        .addStringOption((option) =>
+          option
             .setName("scope")
             .setDescription("Where to apply lockdown")
             .setRequired(false)
             .addChoices(
               { name: "This channel", value: "channel" },
               { name: "This category", value: "category" },
-              { name: "All channels", value: "all" }
-            )
+              { name: "All channels", value: "all" },
+            ),
         )
-        .addStringOption((o) =>
-          o
+        .addStringOption((option) =>
+          option
             .setName("reason")
             .setDescription("Optional reason")
             .setRequired(false)
-            .setMaxLength(200)
-        )
+            .setMaxLength(200),
+        ),
     )
-    .addSubcommand(
-      (sub) =>
-        sub
-          .setName("disable")
-          .setDescription(
-            "Disable lockdown (restore previous @everyone overwrites)"
-          )
-          .addStringOption((o) =>
-            o
-              .setName("reason")
-              .setDescription("Optional reason")
-              .setRequired(false)
-              .setMaxLength(200)
-          )
-      // Optional “force” if no stored state exists:
-      // .addBooleanOption(o =>
-      //   o.setName("force")
-      //     .setDescription("Remove lockdown denies even if no stored state exists")
-      //     .setRequired(false)
-      // )
+    .addSubcommand((sub) =>
+      sub
+        .setName("disable")
+        .setDescription(
+          "Disable lockdown (restore previous @everyone overwrites)",
+        )
+        .addStringOption((option) =>
+          option
+            .setName("reason")
+            .setDescription("Optional reason")
+            .setRequired(false)
+            .setMaxLength(200),
+        ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("status")
-        .setDescription("Show current lockdown status for this server")
+        .setDescription("Show current lockdown status for this server"),
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
+    // Guild Check
     if (!interaction.inGuild()) {
       return interaction.reply({
         content: "This command can only be used in a guild!",
@@ -124,85 +103,244 @@ module.exports = {
       });
     }
 
-    // Extra safety: even though default perms are set, still enforce at runtime.
-    if (
-      !interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels)
-    ) {
-      return interaction.reply({
-        content: "You need **Manage Channels** to use this command.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
     const sub = interaction.options.getSubcommand(true);
 
-    // ----------------
-    // /lockdown status
-    // ----------------
+    // ---------------
+    // Lockdown Status
+    // ---------------
     if (sub === "status") {
-      // TODO: const state = getState(interaction.guildId);
-      // if (!state?.active) ...
+      const state = await getGuildLockdownState(interaction.guildId);
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents((text) =>
+          text.setContent("## Lockdown Status"),
+        )
+        .addSeparatorComponents((s) => s);
+
+      if (state?.active) {
+        container.addTextDisplayComponents((text) =>
+          text.setContent("Lockdown is **not active** for this server."),
+        );
+        return interaction.reply({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
+
+      const enabledAt = Math.floor((state.enabledAt ?? Date.now()) / 1000);
+      const count = Object.keys(state.channels ?? {}).length;
+
+      // Container Response (Active)
+      container.addTextDisplayComponents((text) =>
+        text.setContent(
+          [
+            `Lockdown is **active**.`,
+            `-# \\- Scope: **${state.scope}**`,
+            `-# \\- Enabled: **${enabledAt}**`,
+            `-# \\- Enabled by: **${state.enabledBy}**`,
+            `-# \\- Channels locked: **${count}**`,
+            `-# \\- Reason: **${state.reason ?? "none"}**`,
+          ].join("\n"),
+        ),
+      );
+
       return interaction.reply({
-        content: "Status not implemented yet (store not wired).",
-        flags: MessageFlags.Ephemeral,
+        components: [container],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       });
     }
 
+    // Enable/Disable, defer (bulk channel edits > 3s)
+    await interaction
+      .deferReply({ flags: MessageFlags.Ephemeral })
+      .catch(() => {});
+
     // ---------------
-    // /lockdown enable
+    // Lockdown Enable
     // ---------------
     if (sub === "enable") {
       const scope = interaction.options.getString("scope") ?? "channel";
       const reason = interaction.options.getString("reason") ?? null;
 
-      const targets = getTargetChannels(
-        interaction.guild,
-        scope,
-        interaction.channel
-      );
-      if (!targets.length) {
-        return interaction.reply({
-          content:
-            scope === "category"
-              ? "This channel has no category, so there’s nothing to lock."
-              : "No lockable channels found for that scope.",
-          flags: MessageFlags.Ephemeral,
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents((text) => text.setContent("## Lockdown"))
+        .addSeparatorComponents((s) => s);
+
+      const existing = await getGuildLockdownState(interaction.guildId);
+      if (existing?.active) {
+        const enabledAt = Math.floor((existing.enabledAt ?? Date.now()) / 1000);
+
+        container.addTextDisplayComponents((text) =>
+          text.setContent(
+            [
+              "Lockdown is already **active**",
+              `Enabled <t:${enabledAt}R> by <@${existing.enabledBy}>.`,
+              "-# Use \`/lockdown disable\` first.",
+            ].join("\n"),
+          ),
+        );
+
+        return interaction.editReply({
+          components: [container],
+          flags: Message.IsComponentsV2 | MessageFlags.Ephemeral,
         });
       }
 
-      // TODO:
-      // 1) load existing state; decide whether to allow re-enable
-      // 2) build a state diff:
-      //    - for each target channel, read existing @everyone overwrite
-      //    - store "before" values for the perms you will touch
-      // 3) apply overwrites (merge; only set those perms to false)
-      // 4) save state
+      const targets = getTargetChannels(
+        interaction.guild,
+        scope,
+        interaction.channel,
+      );
+      if (!targets.length) {
+        const content =
+          scope === "category"
+            ? "This channel has no category; nothing to lock."
+            : "No lockable channels found for that scope";
+        container.addTextDisplayComponents((text) => text.setContent(content));
 
-      return interaction.reply({
-        content: `Lockdown enable skeleton OK.\nScope: **${scope}**\nTargets: **${
-          targets.length
-        }**\nReason: ${reason ?? "*none*"}`,
-        flags: MessageFlags.Ephemeral,
+        return interaction.editReply({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
+
+      const { changed, skipped } = await applyLockdown(
+        interaction.guild,
+        targets,
+        reason,
+        actorTag(interaction),
+      );
+
+      const changedCount = Object.keys(changed ?? {}).length;
+
+      if (!changedCount) {
+        container.addTextDisplayComponents((text) =>
+          text.setContent(
+            [
+              "I couldn't lock any channels (likely missing **Manage Channels** in all targets)",
+              `Skipped:\n${formatSkipped(skipped)}`,
+            ].join("\n"),
+          ),
+        );
+
+        return interaction.editReply({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
+
+      /** @type {import("../../stores/lockdownStore").GuildLockdownState | any} */
+      const state = {
+        active: true,
+        guildId: interaction.guildId,
+        scope,
+        enabledBy: interaction.user.id,
+        enabledAt: Date.now(),
+        reason,
+        channels: changed,
+      };
+
+      await setGuildLockdownState(interaction.guildId, state);
+
+      container.addTextDisplayComponents((text) =>
+        text.setContent(
+          [
+            "Lockdown **enabled**",
+            `\\- Scope: **${scope}**`,
+            `\\- Channels Locked: **${changedCount}**`,
+            `\\- Skipped: **${skipped.length}**`,
+            `\\- Reason: ${reason ?? "*none*"}\n`,
+            `-# Skipped Details:\n${formatSkipped(skipped)}`,
+          ].join("\n"),
+        ),
+      );
+
+      return interaction.editReply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       });
     }
 
     // ----------------
-    // /lockdown disable
+    // Lockdown Disable
     // ----------------
     if (sub === "disable") {
       const reason = interaction.options.getString("reason") ?? null;
-      // const force = interaction.options.getBoolean("force") ?? false;
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents((text) =>
+          text.setContent("## Lockdown Disable"),
+        )
+        .addSeparatorComponents((s) => s);
 
-      // TODO:
-      // 1) load state; if none:
-      //    - if force: remove denies by setting perms to null (unset)
-      //    - else: tell user no active lockdown by bot
-      // 2) restore previous values for each channel/perms you touched
-      // 3) clear state
+      const state = await getGuildLockdownState(interaction.guildId);
+      if (!state?.active) {
+        container.addTextDisplayComponents((text) =>
+          text.setContent(
+            "Lockdown is **not active** (no stored state for this server).",
+          ),
+        );
+        return interaction.editReply({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
 
-      return interaction.reply({
-        content: `Lockdown disable skeleton OK.\nReason: ${reason ?? "*none*"}`,
-        flags: MessageFlags.Ephemeral,
+      const { restored, skipped } = await restoreLockdown(
+        interaction.guildId,
+        state,
+        reason,
+        actorTag(interaction),
+      );
+
+      const allIds = Object.keys(state.channels ?? {});
+      const restoredSet = new Set(restored ?? []);
+      const remaining = allIds.filter((id) => !restoredSet.has(id));
+
+      // If failed to restore, keep state for remaining channels to retry later
+      if (remaining.length) {
+        const nextState = {
+          ...state,
+          active: true,
+          channels: Object.fromEntries(
+            remaining.map((id) => [id, state.channels[id]]),
+          ),
+        };
+
+        await setGuildLockdownState(interaction.guildId, nextState);
+        container.addTextDisplayComponents((text) =>
+          text.setContent(
+            [
+              `Lockdown disable was **partial**`,
+              `\\- Restored: **${restored.length}**`,
+              `\\- Still locked (stored): **${remaining.length}**`,
+              `\\- Skipped: **${skipped.length}**\n`,
+              `You can run \`/lockdown disable\` again after fixing permissions / missing channels`,
+              `-# Skipped Details:\n${formatSkipped(skipped)}`,
+            ].join("\n"),
+          ),
+        );
+
+        return interaction.editReply({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        });
+      }
+
+      await clearGuildLockdownState(interaction.guildId);
+      container.addTextDisplayComponents((text) =>
+        text.setContent(
+          [
+            `Lockdown **disabled**`,
+            `\\- Channels restored: **${restored.length}**`,
+            `\\- Skipped: **${skipped.length}**`,
+            `\\- Reason: ${reason ?? "*none*"}\n`,
+            `-# Skipped Details:\n${formatSkipped(skipped)}`,
+          ].join("\n"),
+        ),
+      );
+
+      return interaction.editReply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       });
     }
   },
