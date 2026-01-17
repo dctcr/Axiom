@@ -30,26 +30,32 @@ module.exports = {
       new ButtonBuilder()
         .setLabel("Guidelines")
         .setStyle(ButtonStyle.Link)
-        .setURL(linkTwo)
+        .setURL(linkTwo),
     );
 
     const onRules = new ContainerBuilder()
-      .setAccentColor(0x131416)
       .addTextDisplayComponents((textDisplay) =>
-        textDisplay.setContent("## Server Rules")
+        textDisplay.setContent("## Server Rules"),
       )
       .addSeparatorComponents((separator) => separator)
       .addTextDisplayComponents((textDisplay) =>
         textDisplay.setContent(
-          "**1.** No Spam.\n**2.** No NSFW.\n**3.** No Bullying.\n**4.** Follow Discord TOS."
-        )
+          "**1.** No Spam.\n**2.** No NSFW.\n**3.** No Bullying.\n**4.** Follow Discord TOS.",
+        ),
       )
       .addSeparatorComponents((separator) => separator)
       .addActionRowComponents(row);
 
-    await channel.send({
-      components: [onRules],
-      flags: MessageFlags.IsComponentsV2,
-    });
+    await channel
+      .send({
+        components: [onRules],
+        flags: MessageFlags.IsComponentsV2,
+      })
+      .then(async () => {
+        await interaction.reply({
+          content: "Done!",
+          flags: MessageFlags.Ephemeral,
+        });
+      });
   },
 };
