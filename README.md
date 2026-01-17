@@ -20,7 +20,7 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 - `ban` - Ban members
 - `mute`- Mute members
 - `purge` - Bulk delete (purge) messages from a channel
-- `lockdown` - Lock a channel to members (customizable permissions coming soon)
+- `lockdown` - Lock current channel/current category/all "text-able" channels to members
 - `snipe` - Snipe the most recently deleted message (depth up to 5)
 - `nickname` - Nickname self or others
 
@@ -36,9 +36,9 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 - `eval` - Evaluate code inside Discord (developer only, see **Notes** below)
 - `ping` - Check client latency
 - `uptime` - Check client uptime
+- `rules` – Planned to be highly customizable per server
 
 ### Other
-- `rules` – Planned to be highly customizable per server
 - Customizable Moderation logs in development
 - More commands and configuration options planned
 
