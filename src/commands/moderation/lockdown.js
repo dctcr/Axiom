@@ -116,7 +116,7 @@ module.exports = {
         )
         .addSeparatorComponents((s) => s);
 
-      if (state?.active) {
+      if (!state?.active) {
         container.addTextDisplayComponents((text) =>
           text.setContent("Lockdown is **not active** for this server."),
         );
@@ -127,6 +127,7 @@ module.exports = {
       }
 
       const enabledAt = Math.floor((state.enabledAt ?? Date.now()) / 1000);
+      const enabledBy = interaction.guild.members.cache.get(state.enabledBy).toString();
       const count = Object.keys(state.channels ?? {}).length;
 
       // Container Response (Active)
@@ -135,8 +136,8 @@ module.exports = {
           [
             `Lockdown is **active**.`,
             `-# \\- Scope: **${state.scope}**`,
-            `-# \\- Enabled: **${enabledAt}**`,
-            `-# \\- Enabled by: **${state.enabledBy}**`,
+            `-# \\- Enabled: <t:${enabledAt}:R>`,
+            `-# \\- Enabled By: ${enabledBy}`,
             `-# \\- Channels locked: **${count}**`,
             `-# \\- Reason: **${state.reason ?? "none"}**`,
           ].join("\n"),
@@ -168,12 +169,13 @@ module.exports = {
       const existing = await getGuildLockdownState(interaction.guildId);
       if (existing?.active) {
         const enabledAt = Math.floor((existing.enabledAt ?? Date.now()) / 1000);
+        const enabledBy = interaction.guild.members.cache.get(existing.enabledBy).toString();
 
         container.addTextDisplayComponents((text) =>
           text.setContent(
             [
               "Lockdown is already **active**",
-              `Enabled <t:${enabledAt}R> by <@${existing.enabledBy}>.`,
+              `Enabled <t:${enabledAt}R> by ${enabledBy}`,
               "-# Use \`/lockdown disable\` first.",
             ].join("\n"),
           ),
@@ -244,11 +246,11 @@ module.exports = {
       container.addTextDisplayComponents((text) =>
         text.setContent(
           [
-            "Lockdown **enabled**",
-            `\\- Scope: **${scope}**`,
-            `\\- Channels Locked: **${changedCount}**`,
-            `\\- Skipped: **${skipped.length}**`,
-            `\\- Reason: ${reason ?? "*none*"}\n`,
+            "Lockdown **Enabled**",
+            `-# \\- Scope: **${scope}**`,
+            `-# \\- Channels Locked: **${changedCount}**`,
+            `-# \\- Skipped: **${skipped.length}**`,
+            `-# \\- Reason: ${reason ?? "*none*"}\n`,
             `-# Skipped Details:\n${formatSkipped(skipped)}`,
           ].join("\n"),
         ),
@@ -285,7 +287,7 @@ module.exports = {
       }
 
       const { restored, skipped } = await restoreLockdown(
-        interaction.guildId,
+        interaction.guild,
         state,
         reason,
         actorTag(interaction),
@@ -329,10 +331,10 @@ module.exports = {
       container.addTextDisplayComponents((text) =>
         text.setContent(
           [
-            `Lockdown **disabled**`,
-            `\\- Channels restored: **${restored.length}**`,
-            `\\- Skipped: **${skipped.length}**`,
-            `\\- Reason: ${reason ?? "*none*"}\n`,
+            `Lockdown **Disabled**`,
+            `-# \\- Channels restored: **${restored.length}**`,
+            `-# \\- Skipped: **${skipped.length}**`,
+            `-# \\- Reason: ${reason ?? "*none*"}\n`,
             `-# Skipped Details:\n${formatSkipped(skipped)}`,
           ].join("\n"),
         ),
