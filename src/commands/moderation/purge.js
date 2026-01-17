@@ -3,7 +3,7 @@ const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("disc
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("purge")
-    .setDescription("Bulk delete messages from this channel!")
+    .setDescription("Bulk delete messages from this channel.")
     .addNumberOption((option) =>
       option
         .setName("amount")
