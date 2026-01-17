@@ -126,7 +126,7 @@ async function applyLockdown(guild, channels, reason, actorTag) {
   for (const spec of LOCKDOWN_PERMS) denyPatch[spec.key] = false;
 
   for (const ch of channels) {
-    if (!isLockableChannel) continue;
+    if (!isLockableChannel(ch)) continue;
 
     if (!me) {
       skipped.push({
