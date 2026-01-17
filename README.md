@@ -39,6 +39,7 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 
 ### Other
 - `rules` – Planned to be highly customizable per server
+- Customizable Moderation logs in development
 - More commands and configuration options planned
 
 ---
