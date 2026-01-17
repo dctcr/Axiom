@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("discord.js");
-const { normalize } = require("../../utils");
+const { normalize } = require("../../utils/utils");
 
 module.exports = {
   data: new SlashCommandBuilder()

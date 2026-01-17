@@ -7,7 +7,7 @@ const {
   ButtonStyle,
   PermissionFlagsBits
 } = require("discord.js");
-const { parseCommaList } = require("../../utils");
+const { parseCommaList } = require("../../utils/utils");
 
 // In-memory poll storage (key = messageId)
 // { question, options: [string], votes: Map<userId, optionIndex> }

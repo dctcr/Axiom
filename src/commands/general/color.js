@@ -4,7 +4,7 @@ const {
   ContainerBuilder,
   AttachmentBuilder,
 } = require("discord.js");
-const { parseHex, parseRgb } = require("../../utils");
+const { parseHex, parseRgb } = require("../../utils/utils");
 const { PNG } = require("pngjs");
 
 function makeSolidPng({ r, g, b }, size = 512) {

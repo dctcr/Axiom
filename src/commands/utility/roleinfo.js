@@ -4,7 +4,7 @@ const {
   EmbedBuilder,
   PermissionFlagsBits,
 } = require("discord.js");
-const { resolveRole, formatDate, cleanPerms } = require("../../utils");
+const { resolveRole, formatDate, cleanPerms } = require("../../utils/utils");
 
 module.exports = {
   data: new SlashCommandBuilder()

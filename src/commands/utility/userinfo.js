@@ -8,7 +8,7 @@ const {
   formatDate,
   cleanPerms,
   getJoinPosition,
-} = require("../../utils");
+} = require("../../utils/utils");
 
 module.exports = {
   data: new SlashCommandBuilder()

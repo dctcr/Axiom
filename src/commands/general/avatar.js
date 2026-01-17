@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags, ContainerBuilder, AttachmentBuilder, flatten } = require("discord.js");
-const { resolveMember } =  require("../../utils");
+const { resolveMember } =  require("../../utils/utils");
 
 module.exports = {
   data: new SlashCommandBuilder()

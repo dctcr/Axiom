@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags, ContainerBuilder } = require("discord.js");
-const { parseCommaList, parseNumberRange, randInt, pickOne } = require("../../utils");
+const { parseCommaList, parseNumberRange, randInt, pickOne } = require("../../utils/utils");
 
 module.exports = {
   data: new SlashCommandBuilder()
