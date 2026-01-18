@@ -14,6 +14,7 @@ It focuses on **quality-of-life utilities** and **moderation tools**, with an em
 - `userinfo` – Detailed user information
 - `roleinfo` – Role details and permissions
 - `poll` - Polls with multiple options (custom buttons)
+- `container` - Create a Container from ComponentsV2
 
 ### Moderation
 - `kick` - Kick members
