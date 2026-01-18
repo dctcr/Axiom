@@ -1,4 +1,3 @@
-const { create } = require("domain");
 const fs = require("fs/promises");
 const path = require("path");
 
@@ -13,7 +12,7 @@ const STORE_PATH = path.join(__dirname, "modState.json");
  * Success state for an action
  * @typedef {true|false|null} ModActionSuccess
  * true = succeeded
- * false = failes
+ * false = failed
  * null = pending/unknown (useful during confirmation)
  */
 
@@ -21,16 +20,16 @@ const STORE_PATH = path.join(__dirname, "modState.json");
  * Optional action metadata (use what you need)
  * @typedef {Object} ModActionMeta
  * @property {string=} channelId    Channel where the command was run
- * @property {string=} messageId    Message ID relateed
+ * @property {string=} messageId    Message ID related
  * @property {string=} context      Free-form context (e.g., "SlashCommand /kick")
- * @property {string=} durationMs   Duration (for temp mute/ban)
- * @property {string=} expiresAt    Timestamp when temp action expires
- * @property {string=} revokedAt    Timestamp when action was revoked
+ * @property {number=} durationMs   Duration (for temp mute/ban)
+ * @property {number=} expiresAt    Timestamp when temp action expires
+ * @property {number=} revokedAt    Timestamp when action was revoked
  * @property {string=} revokedBy    User ID who revoked it
  */
 
 /**
- * Optional action metadata
+ * Moderation case record
  * @typedef {Object} ModCase
  * @property {number} caseId
  * @property {string} guildId
@@ -62,14 +61,27 @@ const MAX_CASES_PER_GUILD = 5000;
 let writeQueue = Promise.resolve();
 
 /**
- * Read the moderation store from disk
+ * Read the moderation store from disk.
+ * Recovers safely if the file is empty/corrupt (returns {}).
  * @returns {Promise<ModStoreFile>}
  */
 async function readStore() {
   try {
     const raw = await fs.readFile(STORE_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+
+    // If file exists but is empty/whitespace, treat as empty store.
+    if (!raw || !raw.trim()) return {};
+
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (parseErr) {
+      // Corrupt or truncated JSON — recover by backing it up.
+      const badPath = `${STORE_PATH}.bad-${Date.now()}`;
+      await fs.writeFile(badPath, raw, "utf-8").catch(() => {});
+      // Start fresh (prevents crashing).
+      return {};
+    }
   } catch (err) {
     if (err && err.code === "ENOENT") return {};
     throw err;
@@ -100,6 +112,7 @@ function ensureGuild(store, guildId) {
 
 /**
  * Run a store update in a serialized queue
+ * @template T
  * @param {(store: ModStoreFile) => Promise<T>} fn Async update function
  * @returns {Promise<T>}
  */
@@ -139,7 +152,6 @@ async function createCase(guildId, data) {
 
     g.cases.push(entry);
 
-    // Trim oldest if too large
     if (g.cases.length > MAX_CASES_PER_GUILD) {
       g.cases = g.cases.slice(-MAX_CASES_PER_GUILD);
     }
