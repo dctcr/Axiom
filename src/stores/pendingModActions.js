@@ -15,6 +15,22 @@ const crypto = require("crypto");
  * @property {number} expiresAt
  */
 
+/** Pending ban confirmation payload
+ * @typedef {Object} PendingBan
+ * @property {"BAN"} type
+ * @property {string} token
+ * @property {string} guildId
+ * @property {string} channelId
+ * @property {string} moderatorId
+ * @property {string} targetId
+ * @property {string|null} reason
+ * @property {boolean} silent
+ * @property {number} deleteDays
+ * @property {number} durationMs
+ * @property {number} createdAt
+ * @property {number} expiresAt
+ */
+
 const pending = new Map();
 
 /**
@@ -41,6 +57,35 @@ function createPendingKick(data) {
   };
 
   pending.set(token, rec);
+  return rec;
+}
+
+/**
+ * Create a pending ban action
+ * @param {Omit<PendingBan, "token"|"type"|"createdAt"> & Partial<Pick<PendingBan, "createdAt">>} data
+ * @returns {PendingBan}
+ */
+function createPendingBan(data) {
+  const token = crypto.randomUUID();
+  const now = data.createdAt ?? Date.now();
+
+  /** @type {PendingBan} */
+  const rec = {
+    type: "Ban",
+    token,
+    guildId: data.guildId,
+    channelId: data.channelId,
+    moderatorId: data.moderatorId,
+    targetId: data.targetId,
+    reason: data.reason ?? null,
+    silent: Boolean(data.silent),
+    deleteDays: Number.isInteger(data.deleteDays) ? data.deleteDays : 0,
+    durationMs: Number.isFinite(data.durationMs) ? data.durationMs : 0,
+    createdAt: now,
+    expiresAt: data.expiresAt,
+  };
+
+  pending.set(token);
   return rec;
 }
 
@@ -75,6 +120,7 @@ function consumePending(token) {
 
 module.exports = {
   createPendingKick,
+  createPendingBan,
   getPending,
   consumePending,
 };
