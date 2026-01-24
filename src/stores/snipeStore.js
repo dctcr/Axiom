@@ -1,13 +1,20 @@
 const MAX_DEPTH = 5;
 
-// Depth-based TTLs: newest gets longest
+// Depth-based TTLs
 const TTL_MS = [
-  5 * 60 * 1000, // 1st: 5 min
-  2.5 * 60 * 1000, // 2nd: 2.5 min
-  1 * 60 * 1000, // 3rd: 1 min
-  30 * 1000, // 4th: 30 sec
-  15 * 1000, // 5th: 15 sec
+  5 * 60 * 1000,     // 1st: 5 min
+  2.5 * 60 * 1000,   // 2nd: 2.5 min
+  1 * 60 * 1000,     // 3rd: 1 min
+  30 * 1000,         // 4th: 30 sec
+  15 * 1000,         // 5th: 15 sec
 ];
+
+/**
+ * @typedef {Object} SnipeAttachment
+ * @property {string} url
+ * @property {string=} name
+ * @property {string=} contentType
+ */
 
 /**
  * @typedef {Object} SnipeEntry
@@ -19,13 +26,19 @@ const TTL_MS = [
  * @property {number} createdAt
  * @property {number} deletedAt
  * @property {number} expiresAt
- * @property {{ url: string, name?: string, contentType?: string}} attachments
+ * @property {SnipeAttachment[]} attachments
  */
+
 const snipes = new Map();
 
+/**
+ * Remove expired entries for a channel
+ * @param {string} channelId
+ * @returns {SnipeEntry[]}
+ */
 function cleanup(channelId) {
-  const arr = snipes.get(channelId);
-  if (!arr?.length) return [];
+  const arr = snipes.get(channelId) ?? [];
+  if (!arr.length) return [];
 
   const now = Date.now();
   const kept = arr.filter((e) => now <= e.expiresAt);
@@ -43,21 +56,26 @@ function cleanup(channelId) {
  */
 function pushSnipe(channelId, entry) {
   const arr = cleanup(channelId);
-  arr.unshift({ ...entry, expiresAt: 0 });
+
+  arr.unshift({
+    ...entry,
+    attachments: Array.isArray(entry.attachments) ? entry.attachments : [],
+    expiresAt: 0,
+  });
 
   // Trim
   arr.splice(MAX_DEPTH);
 
   // Recompute expiresAt based on CURRENT index
   for (let i = 0; i < arr.length; i++) {
-    arr[i].expiresAt = arr[i].deletedAt + TTL_MS[i];
+    arr[i].expiresAt = arr[i].deletedAt + (TTL_MS[i] ?? TTL_MS[TTL_MS.length - 1]);
   }
 
   snipes.set(channelId, arr);
 }
 
 /**
- * Get a snipe by depth (1..5). Returns null if missing/expired.
+ * Get a snipe by depth (1..5) | Returns null (missing/expired)
  * @param {string} channelId
  * @param {number} depth
  * @returns {SnipeEntry | null}
