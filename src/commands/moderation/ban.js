@@ -1,52 +1,54 @@
 const {
   SlashCommandBuilder,
   MessageFlags,
-  PermissionFlagsBits,
   ContainerBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
   ButtonStyle,
+  PermissionFlagsBits,
 } = require("discord.js");
 
-const { createPendingKick } = require("../../stores/pendingModActions");
+const { createPendingBan } = require("../../stores/pendingModActions");
+const { parseDuration } = require("../../utils/utils");
 
 const CONFIRM_TTL_MS = 60_000;
 
 /**
- * Build a confirmation UI for kick
- * @param {{ targetLabel: string, reason: string|null, silent: boolean, expiresAt: number }} info
+ * Build a confirmation UI for ban
+ * @param {{ targetLabel: string, reason: string|null, silent: boolean, durationLabel: string, deleteDays: number, expiresAt: number }} info
  * @param {string} token
- * @returns {{ container: ContainerBuilder, row: ActionRowBuilder<ButtonBuilder> }}
+ * @returns {ContainerBuilder}
  */
-function buildKickConfirmUI(info, token) {
+function buildBanConfirmUI(info, token) {
   const seconds = Math.max(1, Math.ceil((info.expiresAt - Date.now()) / 1000));
 
-  const container = new ContainerBuilder()
+  return new ContainerBuilder()
     .setAccentColor(0xbf4941)
     .addTextDisplayComponents((t) =>
       t.setContent(
         [
-          "## Confirm Kick",
+          "## Confirm Ban",
           `**Target:** ${info.targetLabel}`,
           `**Reason:** ${info.reason ?? "*none*"}`,
-          `**DM before kick:** ${info.silent ? "No (silent)" : "Yes"}`,
+          `**Duration:** ${info.durationLabel}`,
+          `**Delete History:** ${info.deleteDays} day(s)`,
+          `**DM before ban:** ${info.silent ? "No (silent)" : "Yes"}`,
           `-# Expires in ~${seconds}s`,
         ].join("\n"),
       ),
+    )
+    .addActionRowComponents((row) =>
+      row.setComponents(
+        (btn) =>
+          btn
+            .setCustomId(`mod:ban:confirm:${token}`)
+            .setLabel("Confirm")
+            .setStyle(ButtonStyle.Danger),
+        (btn) =>
+          btn
+            .setCustomId(`mod:ban:cancel:${token}`)
+            .setLabel("Cancel")
+            .setStyle(ButtonStyle.Secondary),
+      ),
     );
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`mod:kick:confirm:${token}`)
-      .setLabel("Confirm")
-      .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-      .setCustomId(`mod:kick:cancel:${token}`)
-      .setLabel("Cancel")
-      .setStyle(ButtonStyle.Secondary),
-  );
-
-  return { container, row };
 }
 
 /**
@@ -63,72 +65,91 @@ function invokerCanActOnTarget(guild, invoker, target) {
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("kick")
-    .setDescription("Kick a member (with confirmation).")
+    .setName("ban")
+    .setDescription("Ban a member (with confirmation).")
     .addUserOption((option) =>
       option
         .setName("member")
-        .setDescription("Member to kick")
+        .setDescription("Member to ban")
         .setRequired(true),
     )
     .addStringOption((option) =>
       option
+        .setName("duration")
+        .setDescription(
+          "Temp-ban duration like 10m, 2h, 7d (omit for permanent)",
+        )
+        .setRequired(false)
+        .setMaxLength(16),
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("delete_days")
+        .setDescription("Delete message history (0-7 days)")
+        .setRequired(false)
+        .setMinValue(0)
+        .setMaxValue(7),
+    )
+    .addStringOption((option) =>
+      option
         .setName("reason")
-        .setDescription("Reason for the kick")
+        .setDescription("Reason for the ban")
         .setRequired(false)
         .setMaxLength(300),
     )
     .addBooleanOption((option) =>
       option
         .setName("silent")
-        .setDescription("Skip DMing the user before kicking")
+        .setDescription("Skip DMing the user before banning")
         .setRequired(false),
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
   /** @param {import("discord.js").ChatInputCommandInteraction} interaction */
   async execute(interaction) {
+    // Guild Check
     if (!interaction.inGuild()) {
       return interaction.reply({
-        content: "This command can only be used in a guild!",
+        content: `This command can only be used in a guild!`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.KickMembers)) {
+    // Permissions Check
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.BanMembers)) {
       return interaction.reply({
-        content: "You need **Kick Members** to use this command!",
+        content: ``,
         flags: MessageFlags.Ephemeral,
       });
     }
 
     const guild = interaction.guild;
-
-    // Ensure we have a real GuildMember for role comparisons
-    const invoker = await guild.members
-      .fetch(interaction.user.id)
-      .catch(() => null);
-    if (!invoker) {
-      return interaction.reply({
-        content: "Couldn't resolve your member record in this server.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+    const invoker = interaction.member;
 
     const targetUser = interaction.options.getUser("member", true);
+    const durationRaw = interaction.options.getString("duration");
+    const deleteDays = interaction.options.getString("delete_days") ?? 0;
     const reason = interaction.options.getString("reason") ?? null;
     const silent = interaction.options.getBoolean("silent") ?? false;
 
     if (targetUser.id === interaction.user.id) {
       return interaction.reply({
-        content: "You can’t kick yourself..",
+        content: `You can't ban yourself..`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
     if (targetUser.id === guild.ownerId) {
       return interaction.reply({
-        content: "You can’t kick the server owner!",
+        content: `You can't ban the server owner!`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    const parsedDur = parseDuration(durationRaw, { maxMs: 90 * 86_400_000 });
+    if (!parsedDur.ok) {
+      return interaction.reply({
+        content: parsedDur.error,
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -138,51 +159,53 @@ module.exports = {
       .catch(() => null);
     if (!targetMember) {
       return interaction.reply({
-        content: "I couldn’t find that member in this server!",
+        content: `I couldn't find that member!`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
-    if (!targetMember.kickable) {
+    if (!targetMember.bannable) {
       return interaction.reply({
-        content:
-          "I can’t kick that member! (role hierarchy / missing permissions)",
+        content: `I can't ban that member! (role hierarchy / missing permissions)`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
     if (!invokerCanActOnTarget(guild, invoker, targetMember)) {
       return interaction.reply({
-        content:
-          "You can’t kick that member (their top role is equal or higher than yours).",
+        content: `You can't ban that member!`,
         flags: MessageFlags.Ephemeral,
       });
     }
 
     const expiresAt = Date.now() + CONFIRM_TTL_MS;
 
-    const pending = createPendingKick({
+    const pending = createPendingBan({
       guildId: guild.id,
       channelId: interaction.channelId,
       moderatorId: interaction.user.id,
       targetId: targetMember.id,
       reason,
       silent,
+      deleteDays,
+      durationMs: parsedDur.ms,
       expiresAt,
     });
 
-    const { container, row } = buildKickConfirmUI(
+    const container = buildBanConfirmUI(
       {
         targetLabel: `${targetMember} (${targetMember.user.tag})`,
         reason,
         silent,
+        durationLabel: parsedDur.ms ? parsedDur.label : "Permanent",
+        deleteDays,
         expiresAt,
       },
       pending.token,
     );
 
     return interaction.reply({
-      components: [container, row],
+      components: [container],
       flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
       allowedMentions: { parse: [] },
     });
