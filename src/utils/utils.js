@@ -296,6 +296,40 @@ function parseRgb(value) {
   return { ok: true, hex, r, g, b, int };
 }
 
+/**
+ * Parse a duration like "10m", "2h", "7d", "1w"
+ * @param {string | null | undefined} input Duration string
+ * @param {{ maxMs?: number }} opts Options
+ * @returns {{ ok: true, ms: number, label: string } | { ok: false, error: string }}
+ */
+function parseDuration(input, opts = {}) {
+  const raw = String(input ?? "").trim();
+  if (!raw) return { ok: true, ms: 0, label: "Permanent"};
+
+  if (/^(perm|permanent)$/i.test(raw)) return { ok: true, ms: 0, label: "Permanent"};
+
+  const m = raw.match(/^(\d+)\s*([smhdw])$/i);
+  if (!m) return { ok: false, error: "Duration must look like `10m`, `2h`, `7d`, `1w` (or omit for permament)."};
+
+  const n = Number(m[1]);
+  const unit = m[2].toLowerCase();
+  if (!Number.isInteger(n) || n <= 0) return { ok: false, error: "Duration value must be a positive whole number!"};
+
+  const mult =
+    unit === "s" ? 1000 :
+    unit === "m" ? 60_000 :
+    unit === "h" ? 3_600_000 :
+    unit === "d" ? 86_400_000 :
+    604_800_000; // w
+
+  const ms = n * mult;
+  const maxMs = opts.maxMs ?? 90 * 24 * 60 * 1000; // 90 day cap
+  if (ms > maxMs) return { ok: false, error: `Duration too long. Max is ${Math.floor(maxMs / 86_400_000)} days!`};
+
+  const label = `${n}${unit}`;
+  return { ok: true, ms, label };
+}
+
 module.exports = {
   normalize,
   resolveMember,
@@ -308,5 +342,6 @@ module.exports = {
   randInt,
   pickOne,
   parseHex,
-  parseRgb
+  parseRgb,
+  parseDuration
 };
