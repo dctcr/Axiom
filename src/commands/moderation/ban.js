@@ -7,6 +7,7 @@ const {
 } = require("discord.js");
 
 const { createPendingBan } = require("../../stores/pendingModActions");
+const { invokerCanActOnTarget } = require("../../utils/moderation");
 const { parseDuration } = require("../../utils/utils");
 
 const CONFIRM_TTL_MS = 60_000;
@@ -49,18 +50,6 @@ function buildBanConfirmUI(info, token) {
             .setStyle(ButtonStyle.Secondary),
       ),
     );
-}
-
-/**
- * Check role hierarchy: invoker must be strictly higher than target
- * @param {import("discord.js").Guild} guild
- * @param {import("discord.js").GuildMember} invoker
- * @param {import("discord.js").GuildMember} target
- * @returns {boolean}
- */
-function invokerCanActOnTarget(guild, invoker, target) {
-  if (guild.ownerId === invoker.id) return true; // owner bypass
-  return invoker.roles.highest.comparePositionTo(target.roles.highest) > 0;
 }
 
 module.exports = {
