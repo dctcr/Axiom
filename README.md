@@ -102,9 +102,9 @@ src\
   config\
   events\
   stores\
+  utils\
   deployCommand.js
   index.js
-  utils.js
 .env
 ```
 
